@@ -87,7 +87,7 @@ func NewGroupHandler(adminService service.AdminService, dashboardService *servic
 type CreateGroupRequest struct {
 	Name             string             `json:"name" binding:"required"`
 	Description      string             `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity grok composite"`
+	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity kiro grok composite"`
 	RateMultiplier   float64            `json:"rate_multiplier"`
 	IsExclusive      bool               `json:"is_exclusive"`
 	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
@@ -136,6 +136,12 @@ type CreateGroupRequest struct {
 	MaxReasoningEffort string `json:"max_reasoning_effort"`
 	// OpenAI/Codex 推理强度精确映射。
 	ReasoningEffortMappings []service.ReasoningEffortMapping `json:"reasoning_effort_mappings"`
+	// Kiro 模拟缓存配置（仅 kiro 分组生效）
+	KiroCacheEmulationEnabled   bool     `json:"kiro_cache_emulation_enabled"`
+	KiroAutoStickyEnabled       *bool    `json:"kiro_auto_sticky_enabled"`
+	KiroStickySessionTTLSeconds *int     `json:"kiro_sticky_session_ttl_seconds"`
+	KiroCacheEmulationRatio     *float64 `json:"kiro_cache_emulation_ratio"`
+	KiroEndpointMode            *string  `json:"kiro_endpoint_mode"`
 	// 从指定分组复制账号（创建后自动绑定）
 	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
 }
@@ -144,7 +150,7 @@ type CreateGroupRequest struct {
 type UpdateGroupRequest struct {
 	Name             string             `json:"name"`
 	Description      *string            `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity grok composite"`
+	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity kiro grok composite"`
 	RateMultiplier   *float64           `json:"rate_multiplier"`
 	IsExclusive      *bool              `json:"is_exclusive"`
 	Status           string             `json:"status" binding:"omitempty,oneof=active inactive"`
@@ -194,6 +200,12 @@ type UpdateGroupRequest struct {
 	MaxReasoningEffort *string `json:"max_reasoning_effort"`
 	// nil 不修改，空数组清空，非空数组替换。
 	ReasoningEffortMappings *[]service.ReasoningEffortMapping `json:"reasoning_effort_mappings"`
+	// Kiro 模拟缓存配置（仅 kiro 分组生效）
+	KiroCacheEmulationEnabled   *bool    `json:"kiro_cache_emulation_enabled"`
+	KiroAutoStickyEnabled       *bool    `json:"kiro_auto_sticky_enabled"`
+	KiroStickySessionTTLSeconds *int     `json:"kiro_sticky_session_ttl_seconds"`
+	KiroCacheEmulationRatio     *float64 `json:"kiro_cache_emulation_ratio"`
+	KiroEndpointMode            *string  `json:"kiro_endpoint_mode"`
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
 }
@@ -448,6 +460,24 @@ func (h *GroupHandler) GetModelsListCandidates(c *gin.Context) {
 	response.Success(c, gin.H{"models": models})
 }
 
+// GetEffectiveModels handles getting the models the group can currently serve.
+// GET /api/v1/admin/groups/:id/effective-models
+func (h *GroupHandler) GetEffectiveModels(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || groupID <= 0 {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+
+	models, err := h.adminService.GetGroupEffectiveModels(c.Request.Context(), groupID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"models": models})
+}
+
 // Create handles creating a new group
 // POST /api/v1/admin/groups
 func (h *GroupHandler) Create(c *gin.Context) {
@@ -507,6 +537,11 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		RPMLimit:                        req.RPMLimit,
 		MaxReasoningEffort:              req.MaxReasoningEffort,
 		ReasoningEffortMappings:         req.ReasoningEffortMappings,
+		KiroCacheEmulationEnabled:       req.KiroCacheEmulationEnabled,
+		KiroAutoStickyEnabled:           req.KiroAutoStickyEnabled,
+		KiroStickySessionTTLSeconds:     req.KiroStickySessionTTLSeconds,
+		KiroCacheEmulationRatio:         req.KiroCacheEmulationRatio,
+		KiroEndpointMode:                req.KiroEndpointMode,
 		CopyAccountsFromGroupIDs:        req.CopyAccountsFromGroupIDs,
 	})
 	if err != nil {
@@ -625,6 +660,11 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		RPMLimit:                        req.RPMLimit,
 		MaxReasoningEffort:              req.MaxReasoningEffort,
 		ReasoningEffortMappings:         req.ReasoningEffortMappings,
+		KiroCacheEmulationEnabled:       req.KiroCacheEmulationEnabled,
+		KiroAutoStickyEnabled:           req.KiroAutoStickyEnabled,
+		KiroStickySessionTTLSeconds:     req.KiroStickySessionTTLSeconds,
+		KiroCacheEmulationRatio:         req.KiroCacheEmulationRatio,
+		KiroEndpointMode:                req.KiroEndpointMode,
 		CopyAccountsFromGroupIDs:        req.CopyAccountsFromGroupIDs,
 	})
 	if err != nil {

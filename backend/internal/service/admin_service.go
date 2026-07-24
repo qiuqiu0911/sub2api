@@ -39,6 +39,7 @@ type AdminService interface {
 	GetAllGroupsIncludingInactive(ctx context.Context) ([]Group, error)
 	GetGroup(ctx context.Context, id int64) (*Group, error)
 	GetGroupModelsListCandidates(ctx context.Context, id int64, platform string) ([]string, error)
+	GetGroupEffectiveModels(ctx context.Context, id int64) ([]string, error)
 	CreateGroup(ctx context.Context, input *CreateGroupInput) (*Group, error)
 	// DuplicateGroup creates an inactive independent copy of a group's configuration
 	// and account bindings while preserving each binding's priority.
@@ -97,6 +98,8 @@ type AdminService interface {
 	EnsureOpenAIPrivacy(ctx context.Context, account *Account) string
 	// EnsureAntigravityPrivacy 检查 Antigravity OAuth 账号 privacy_mode，未设置则调用 setUserSettings 并持久化。
 	EnsureAntigravityPrivacy(ctx context.Context, account *Account) string
+	// EnsureKiroProfileArn 检查 Kiro OAuth 账号是否已有 profile_arn，缺失或为占位符则解析并持久化。
+	EnsureKiroProfileArn(ctx context.Context, account *Account) string
 	// ForceOpenAIPrivacy 强制重新设置 OpenAI OAuth 账号隐私，无论当前状态。
 	ForceOpenAIPrivacy(ctx context.Context, account *Account) string
 	// ForceAntigravityPrivacy 强制重新设置 Antigravity OAuth 账号隐私，无论当前状态。
@@ -263,6 +266,12 @@ type CreateGroupInput struct {
 	MaxReasoningEffort string
 	// ReasoningEffortMappings OpenAI/Codex 推理强度精确映射。
 	ReasoningEffortMappings []ReasoningEffortMapping
+	// Kiro 模拟缓存配置（仅 kiro 分组生效）
+	KiroCacheEmulationEnabled   bool
+	KiroAutoStickyEnabled       *bool
+	KiroStickySessionTTLSeconds *int
+	KiroCacheEmulationRatio     *float64
+	KiroEndpointMode            *string
 	// 从指定分组复制账号（创建分组后在同一事务内绑定）
 	CopyAccountsFromGroupIDs []int64
 }
@@ -323,6 +332,12 @@ type UpdateGroupInput struct {
 	MaxReasoningEffort *string
 	// ReasoningEffortMappings nil 表示不修改，空数组表示清空，非空数组表示替换。
 	ReasoningEffortMappings *[]ReasoningEffortMapping
+	// Kiro 模拟缓存配置（仅 kiro 分组生效）
+	KiroCacheEmulationEnabled   *bool
+	KiroAutoStickyEnabled       *bool
+	KiroStickySessionTTLSeconds *int
+	KiroCacheEmulationRatio     *float64
+	KiroEndpointMode            *string
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs []int64
 }

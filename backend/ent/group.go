@@ -121,6 +121,16 @@ type Group struct {
 	MaxReasoningEffort string `json:"max_reasoning_effort,omitempty"`
 	// OpenAI reasoning effort 自定义精确映射；先映射再应用上限
 	ReasoningEffortMappings []domain.ReasoningEffortMapping `json:"reasoning_effort_mappings,omitempty"`
+	// 是否启用 Kiro 模拟缓存（仅 kiro 分组生效）
+	KiroCacheEmulationEnabled bool `json:"kiro_cache_emulation_enabled,omitempty"`
+	// 是否启用 Kiro 自动会话粘性路由（仅 kiro 分组生效）
+	KiroAutoStickyEnabled bool `json:"kiro_auto_sticky_enabled,omitempty"`
+	// Kiro 自动会话粘性绑定 TTL（秒，仅 kiro 分组生效）
+	KiroStickySessionTTLSeconds int `json:"kiro_sticky_session_ttl_seconds,omitempty"`
+	// Kiro 模拟缓存生效比例，范围 0-1（仅 kiro 分组生效）
+	KiroCacheEmulationRatio float64 `json:"kiro_cache_emulation_ratio,omitempty"`
+	// Kiro 推理 endpoint：q=AWS Q (q.{region}.amazonaws.com), krs=Kiro Runtime Service (runtime.us-east-1.kiro.dev)
+	KiroEndpointMode string `json:"kiro_endpoint_mode,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -229,13 +239,13 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldMessagesDispatchModelConfig, group.FieldModelsListConfig, group.FieldReasoningEffortMappings:
 			values[i] = new([]byte)
-		case group.FieldPeakRateEnabled, group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldAllowBatchImageGeneration, group.FieldImageRateIndependent, group.FieldVideoRateIndependent, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet:
+		case group.FieldPeakRateEnabled, group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldAllowBatchImageGeneration, group.FieldImageRateIndependent, group.FieldVideoRateIndependent, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet, group.FieldKiroCacheEmulationEnabled, group.FieldKiroAutoStickyEnabled:
 			values[i] = new(sql.NullBool)
-		case group.FieldRateMultiplier, group.FieldPeakRateMultiplier, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImageRateMultiplier, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k, group.FieldBatchImageDiscountMultiplier, group.FieldBatchImageHoldMultiplier, group.FieldVideoRateMultiplier, group.FieldVideoPrice480p, group.FieldVideoPrice720p, group.FieldVideoPrice1080p, group.FieldWebSearchPricePerCall:
+		case group.FieldRateMultiplier, group.FieldPeakRateMultiplier, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImageRateMultiplier, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k, group.FieldBatchImageDiscountMultiplier, group.FieldBatchImageHoldMultiplier, group.FieldVideoRateMultiplier, group.FieldVideoPrice480p, group.FieldVideoPrice720p, group.FieldVideoPrice1080p, group.FieldWebSearchPricePerCall, group.FieldKiroCacheEmulationRatio:
 			values[i] = new(sql.NullFloat64)
-		case group.FieldID, group.FieldDefaultValidityDays, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldSortOrder, group.FieldRpmLimit:
+		case group.FieldID, group.FieldDefaultValidityDays, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldSortOrder, group.FieldRpmLimit, group.FieldKiroStickySessionTTLSeconds:
 			values[i] = new(sql.NullInt64)
-		case group.FieldName, group.FieldDescription, group.FieldPeakStart, group.FieldPeakEnd, group.FieldStatus, group.FieldDuplicateOperationID, group.FieldPlatform, group.FieldSubscriptionType, group.FieldDefaultMappedModel, group.FieldMaxReasoningEffort:
+		case group.FieldName, group.FieldDescription, group.FieldPeakStart, group.FieldPeakEnd, group.FieldStatus, group.FieldDuplicateOperationID, group.FieldPlatform, group.FieldSubscriptionType, group.FieldDefaultMappedModel, group.FieldMaxReasoningEffort, group.FieldKiroEndpointMode:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt, group.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -591,6 +601,36 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field reasoning_effort_mappings: %w", err)
 				}
 			}
+		case group.FieldKiroCacheEmulationEnabled:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field kiro_cache_emulation_enabled", values[i])
+			} else if value.Valid {
+				_m.KiroCacheEmulationEnabled = value.Bool
+			}
+		case group.FieldKiroAutoStickyEnabled:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field kiro_auto_sticky_enabled", values[i])
+			} else if value.Valid {
+				_m.KiroAutoStickyEnabled = value.Bool
+			}
+		case group.FieldKiroStickySessionTTLSeconds:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field kiro_sticky_session_ttl_seconds", values[i])
+			} else if value.Valid {
+				_m.KiroStickySessionTTLSeconds = int(value.Int64)
+			}
+		case group.FieldKiroCacheEmulationRatio:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field kiro_cache_emulation_ratio", values[i])
+			} else if value.Valid {
+				_m.KiroCacheEmulationRatio = value.Float64
+			}
+		case group.FieldKiroEndpointMode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field kiro_endpoint_mode", values[i])
+			} else if value.Valid {
+				_m.KiroEndpointMode = value.String
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -849,6 +889,21 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("reasoning_effort_mappings=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ReasoningEffortMappings))
+	builder.WriteString(", ")
+	builder.WriteString("kiro_cache_emulation_enabled=")
+	builder.WriteString(fmt.Sprintf("%v", _m.KiroCacheEmulationEnabled))
+	builder.WriteString(", ")
+	builder.WriteString("kiro_auto_sticky_enabled=")
+	builder.WriteString(fmt.Sprintf("%v", _m.KiroAutoStickyEnabled))
+	builder.WriteString(", ")
+	builder.WriteString("kiro_sticky_session_ttl_seconds=")
+	builder.WriteString(fmt.Sprintf("%v", _m.KiroStickySessionTTLSeconds))
+	builder.WriteString(", ")
+	builder.WriteString("kiro_cache_emulation_ratio=")
+	builder.WriteString(fmt.Sprintf("%v", _m.KiroCacheEmulationRatio))
+	builder.WriteString(", ")
+	builder.WriteString("kiro_endpoint_mode=")
+	builder.WriteString(_m.KiroEndpointMode)
 	builder.WriteByte(')')
 	return builder.String()
 }
