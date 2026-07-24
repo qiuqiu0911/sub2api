@@ -138,15 +138,7 @@
             <span
               :class="[
                 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                value === 'anthropic'
-                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                  : value === 'openai'
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : value === 'antigravity'
-                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                      : value === 'grok'
-                        ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                platformBadgeLightClass(value),
               ]"
             >
               <PlatformIcon :platform="value" size="xs" />
@@ -581,6 +573,7 @@
             </option>
           </select>
           <p class="input-hint">{{ t("admin.groups.copyAccounts.hint") }}</p>
+
         </div>
         <div>
           <label class="input-label">{{
@@ -751,6 +744,74 @@
                 :placeholder="t('admin.groups.subscription.noLimit')"
               />
             </div>
+          </div>
+        </div>
+
+        <!-- Kiro 模拟缓存配置 -->
+        <div v-if="createForm.platform === 'kiro'" class="border-t pt-4">
+          <!-- 粘性路由说明 -->
+          <label class="mb-4 flex items-start gap-3 rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+            <input
+              v-model="createForm.kiro_auto_sticky_enabled"
+              type="checkbox"
+              class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>
+              <span class="block text-xs font-medium text-blue-700 dark:text-blue-400">
+                {{ t("admin.groups.kiroCache.stickyRouting") }}
+              </span>
+              <span class="mt-1 block text-xs text-blue-600 dark:text-blue-300">
+                {{ t("admin.groups.kiroCache.stickyRoutingHint") }}
+              </span>
+            </span>
+          </label>
+          <div v-if="createForm.kiro_auto_sticky_enabled" class="mb-4">
+            <label class="input-label">{{ t("admin.groups.kiroCache.stickyTTL") }}</label>
+            <input
+              v-model.number="createForm.kiro_sticky_session_ttl_seconds"
+              type="number"
+              step="60"
+              min="60"
+              max="86400"
+              class="input"
+              placeholder="3600"
+            />
+            <p class="input-hint">{{ t("admin.groups.kiroCache.stickyTTLHint") }}</p>
+          </div>
+          <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+            {{ t("admin.groups.kiroCache.title") }}
+          </label>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            {{ t("admin.groups.kiroCache.description") }}
+          </p>
+          <label class="mb-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              v-model="createForm.kiro_cache_emulation_enabled"
+              type="checkbox"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            {{ t("admin.groups.kiroCache.enabled") }}
+          </label>
+          <div v-if="createForm.kiro_cache_emulation_enabled">
+            <label class="input-label">{{ t("admin.groups.kiroCache.ratio") }}</label>
+            <input
+              v-model.number="createForm.kiro_cache_emulation_ratio"
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              class="input"
+              placeholder="1"
+            />
+            <p class="input-hint">{{ t("admin.groups.kiroCache.ratioHint") }}</p>
+          </div>
+          <div class="mt-3">
+            <label class="input-label">{{ t("admin.groups.kiroCache.endpointMode") }}</label>
+            <Select
+              v-model="createForm.kiro_endpoint_mode"
+              :options="kiroEndpointModeOptions"
+            />
+            <p class="input-hint">{{ t("admin.groups.kiroCache.endpointModeHint") }}</p>
           </div>
         </div>
 
@@ -1654,10 +1715,10 @@
           </div>
         </div>
 
-        <!-- 账号过滤控制 (OpenAI/Antigravity/Anthropic/Gemini) -->
+        <!-- 账号过滤控制 (OpenAI/Antigravity/Anthropic/Gemini/Kiro) -->
         <div
           v-if="
-            ['openai', 'antigravity', 'anthropic', 'gemini'].includes(
+            ['openai', 'antigravity', 'anthropic', 'gemini', 'kiro'].includes(
               createForm.platform,
             )
           "
@@ -2306,6 +2367,74 @@
                 :placeholder="t('admin.groups.subscription.noLimit')"
               />
             </div>
+          </div>
+        </div>
+
+        <!-- Kiro 模拟缓存配置 -->
+        <div v-if="editForm.platform === 'kiro'" class="border-t pt-4">
+          <!-- 粘性路由说明 -->
+          <label class="mb-4 flex items-start gap-3 rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+            <input
+              v-model="editForm.kiro_auto_sticky_enabled"
+              type="checkbox"
+              class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>
+              <span class="block text-xs font-medium text-blue-700 dark:text-blue-400">
+                {{ t("admin.groups.kiroCache.stickyRouting") }}
+              </span>
+              <span class="mt-1 block text-xs text-blue-600 dark:text-blue-300">
+                {{ t("admin.groups.kiroCache.stickyRoutingHint") }}
+              </span>
+            </span>
+          </label>
+          <div v-if="editForm.kiro_auto_sticky_enabled" class="mb-4">
+            <label class="input-label">{{ t("admin.groups.kiroCache.stickyTTL") }}</label>
+            <input
+              v-model.number="editForm.kiro_sticky_session_ttl_seconds"
+              type="number"
+              step="60"
+              min="60"
+              max="86400"
+              class="input"
+              placeholder="3600"
+            />
+            <p class="input-hint">{{ t("admin.groups.kiroCache.stickyTTLHint") }}</p>
+          </div>
+          <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+            {{ t("admin.groups.kiroCache.title") }}
+          </label>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            {{ t("admin.groups.kiroCache.description") }}
+          </p>
+          <label class="mb-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              v-model="editForm.kiro_cache_emulation_enabled"
+              type="checkbox"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            {{ t("admin.groups.kiroCache.enabled") }}
+          </label>
+          <div v-if="editForm.kiro_cache_emulation_enabled">
+            <label class="input-label">{{ t("admin.groups.kiroCache.ratio") }}</label>
+            <input
+              v-model.number="editForm.kiro_cache_emulation_ratio"
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              class="input"
+              placeholder="1"
+            />
+            <p class="input-hint">{{ t("admin.groups.kiroCache.ratioHint") }}</p>
+          </div>
+          <div class="mt-3">
+            <label class="input-label">{{ t("admin.groups.kiroCache.endpointMode") }}</label>
+            <Select
+              v-model="editForm.kiro_endpoint_mode"
+              :options="kiroEndpointModeOptions"
+            />
+            <p class="input-hint">{{ t("admin.groups.kiroCache.endpointModeHint") }}</p>
           </div>
         </div>
 
@@ -3605,15 +3734,7 @@
                 <span
                   :class="[
                     'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                    group.platform === 'anthropic'
-                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                      : group.platform === 'openai'
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : group.platform === 'antigravity'
-                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                          : group.platform === 'grok'
-                            ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                    platformBadgeLightClass(group.platform),
                   ]"
                 >
                   {{ t("admin.groups.platforms." + group.platform) }}
@@ -4092,6 +4213,7 @@ import {
 } from "./groupsModelsList";
 import { createModelsListCandidatesTracker } from "./groupsModelsListCandidates";
 import { normalizeSupportedModelScopesForPlatform } from "./groupsSupportedModelScopes";
+import { platformBadgeLightClass } from "@/utils/platformColors";
 import {
   normalizeReasoningEffortForPlatform,
   reasoningEffortMappingsToAPI,
@@ -4292,6 +4414,7 @@ const platformOptions = computed(() => [
   { value: "openai", label: "OpenAI" },
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
+  { value: "kiro", label: "Kiro" },
   { value: "grok", label: "Grok" },
   { value: "composite", label: "Composite" },
 ]);
@@ -4302,6 +4425,7 @@ const platformFilterOptions = computed(() => [
   { value: "openai", label: "OpenAI" },
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
+  { value: "kiro", label: "Kiro" },
   { value: "grok", label: "Grok" },
   { value: "composite", label: "Composite" },
 ]);
@@ -4353,6 +4477,12 @@ const editStatusOptions = computed(() => [
 const subscriptionTypeOptions = computed(() => [
   { value: "standard", label: t("admin.groups.subscription.standard") },
   { value: "subscription", label: t("admin.groups.subscription.subscription") },
+]);
+
+const kiroEndpointModeOptions = computed(() => [
+  { value: "q", label: t("admin.groups.kiroCache.endpointModeQ") },
+  { value: "krs", label: t("admin.groups.kiroCache.endpointModeKRS") },
+  { value: "auto", label: t("admin.groups.kiroCache.endpointModeAuto") },
 ]);
 
 // 降级分组选项（创建时）- 仅包含 anthropic 平台且未启用 claude_code_only 的分组
@@ -4641,6 +4771,12 @@ const createForm = reactive({
   rpm_limit: 0 as number,
   max_reasoning_effort: "",
   reasoning_effort_mappings: [] as ReasoningEffortMappingRow[],
+  // Kiro 模拟缓存配置（仅 Kiro 平台）
+  kiro_cache_emulation_enabled: false,
+  kiro_auto_sticky_enabled: true,
+  kiro_sticky_session_ttl_seconds: 3600,
+  kiro_cache_emulation_ratio: 1,
+  kiro_endpoint_mode: "q" as "q" | "krs" | "auto",
 });
 
 // 简单账号类型（用于模型路由选择）
@@ -4992,6 +5128,12 @@ const editForm = reactive({
   rpm_limit: 0 as number,
   max_reasoning_effort: "",
   reasoning_effort_mappings: [] as ReasoningEffortMappingRow[],
+  // Kiro 模拟缓存配置（仅 Kiro 平台）
+  kiro_cache_emulation_enabled: false,
+  kiro_auto_sticky_enabled: true,
+  kiro_sticky_session_ttl_seconds: 3600,
+  kiro_cache_emulation_ratio: 1,
+  kiro_endpoint_mode: "q" as "q" | "krs" | "auto",
 });
 
 type ImagePricingFormState = {
@@ -5423,6 +5565,11 @@ const closeCreateModal = () => {
   createForm.max_reasoning_effort = "";
   createForm.reasoning_effort_mappings = [];
   createReasoningEffortPolicyRef.value?.resetValidation();
+  createForm.kiro_cache_emulation_enabled = false;
+  createForm.kiro_auto_sticky_enabled = true;
+  createForm.kiro_sticky_session_ttl_seconds = 3600;
+  createForm.kiro_cache_emulation_ratio = 1;
+  createForm.kiro_endpoint_mode = "q";
   resetModelsListState(createModelsListState);
   createModelRoutingRules.value = [];
 };
@@ -5454,6 +5601,16 @@ const normalizeRateMultiplier = (
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 1;
+};
+
+const normalizeKiroStickySessionTTL = (
+  value: number | string | null | undefined,
+): number => {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return 3600;
+  }
+  return Math.min(86400, Math.max(60, Math.trunc(seconds)));
 };
 
 const handleCreateGroup = async () => {
@@ -5512,6 +5669,17 @@ const handleCreateGroup = async () => {
     requestData.image_rate_multiplier = normalizeRateMultiplier(
       requestData.image_rate_multiplier,
     );
+    if (requestData.platform !== "kiro") {
+      requestData.kiro_auto_sticky_enabled = false;
+      requestData.kiro_sticky_session_ttl_seconds = 0;
+      requestData.kiro_cache_emulation_enabled = false;
+      requestData.kiro_cache_emulation_ratio = 0;
+      requestData.kiro_endpoint_mode = "q";
+    } else {
+      requestData.kiro_sticky_session_ttl_seconds = normalizeKiroStickySessionTTL(
+        requestData.kiro_sticky_session_ttl_seconds,
+      );
+    }
     resetDisabledBatchImagePricing(requestData);
     requestData.batch_image_discount_multiplier = normalizeRateMultiplier(
       requestData.batch_image_discount_multiplier,
@@ -5626,6 +5794,14 @@ const handleEdit = async (group: AdminGroup) => {
     group.reasoning_effort_mappings,
     group.platform,
   );
+  editForm.kiro_auto_sticky_enabled =
+    group.kiro_auto_sticky_enabled ?? group.platform === "kiro";
+  editForm.kiro_sticky_session_ttl_seconds =
+    group.kiro_sticky_session_ttl_seconds ?? 3600;
+  editForm.kiro_cache_emulation_enabled = group.kiro_cache_emulation_enabled ?? false;
+  editForm.kiro_cache_emulation_ratio = group.kiro_cache_emulation_ratio ?? 1;
+  const mode = group.kiro_endpoint_mode;
+  editForm.kiro_endpoint_mode = (mode === "krs" || mode === "auto") ? mode : "q";
   resetModelsListState(editModelsListState, group.models_list_config);
   // 加载模型路由规则（异步加载账号名称）
   editModelRoutingRules.value = await convertApiFormatToRoutingRules(
@@ -5726,6 +5902,17 @@ const handleUpdateGroup = async () => {
     payload.image_rate_multiplier = normalizeRateMultiplier(
       payload.image_rate_multiplier,
     );
+    if (payload.platform !== "kiro") {
+      payload.kiro_auto_sticky_enabled = false;
+      payload.kiro_sticky_session_ttl_seconds = 0;
+      payload.kiro_cache_emulation_enabled = false;
+      payload.kiro_cache_emulation_ratio = 0;
+      payload.kiro_endpoint_mode = "q";
+    } else {
+      payload.kiro_sticky_session_ttl_seconds = normalizeKiroStickySessionTTL(
+        payload.kiro_sticky_session_ttl_seconds,
+      );
+    }
     resetDisabledBatchImagePricing(payload);
     payload.batch_image_discount_multiplier = normalizeRateMultiplier(
       payload.batch_image_discount_multiplier,
@@ -6074,7 +6261,7 @@ watch(
       newVal,
     );
     createReasoningEffortPolicyRef.value?.resetValidation();
-    if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
+    if (!["openai", "antigravity", "anthropic", "gemini", "kiro"].includes(newVal)) {
       createForm.require_oauth_only = false;
       createForm.require_privacy_set = false;
     }
@@ -6117,7 +6304,7 @@ watch(
       newVal,
     );
     editReasoningEffortPolicyRef.value?.resetValidation();
-    if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
+    if (!["openai", "antigravity", "anthropic", "gemini", "kiro"].includes(newVal)) {
       editForm.require_oauth_only = false;
       editForm.require_privacy_set = false;
     }

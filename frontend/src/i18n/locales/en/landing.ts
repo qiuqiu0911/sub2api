@@ -101,6 +101,7 @@ export default {
       claude: 'Claude',
       gemini: 'Gemini',
       antigravity: 'Antigravity',
+      kiro: 'Kiro',
       more: 'More'
     },
     // CTA section

@@ -492,7 +492,14 @@ export interface PaginationConfig {
 
 // ==================== API Key & Group Types ====================
 
-export type GroupPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok' | 'composite'
+export type GroupPlatform =
+  | 'anthropic'
+  | 'openai'
+  | 'gemini'
+  | 'antigravity'
+  | 'kiro'
+  | 'grok'
+  | 'composite'
 
 export type SubscriptionType = 'standard' | 'subscription'
 
@@ -557,6 +564,11 @@ export interface Group {
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
   require_oauth_only: boolean
   require_privacy_set: boolean
+  kiro_auto_sticky_enabled: boolean
+  kiro_sticky_session_ttl_seconds: number
+  kiro_cache_emulation_enabled: boolean
+  kiro_cache_emulation_ratio: number
+  kiro_endpoint_mode?: string
   created_at: string
   updated_at: string
 }
@@ -754,6 +766,11 @@ export interface CreateGroupRequest {
   reasoning_effort_mappings?: ReasoningEffortMapping[]
   require_oauth_only?: boolean
   require_privacy_set?: boolean
+  kiro_auto_sticky_enabled?: boolean
+  kiro_sticky_session_ttl_seconds?: number
+  kiro_cache_emulation_enabled?: boolean
+  kiro_cache_emulation_ratio?: number
+  kiro_endpoint_mode?: string
   // 从指定分组复制账号
   copy_accounts_from_group_ids?: number[]
 }
@@ -805,12 +822,17 @@ export interface UpdateGroupRequest {
   reasoning_effort_mappings?: ReasoningEffortMapping[]
   require_oauth_only?: boolean
   require_privacy_set?: boolean
+  kiro_auto_sticky_enabled?: boolean
+  kiro_sticky_session_ttl_seconds?: number
+  kiro_cache_emulation_enabled?: boolean
+  kiro_cache_emulation_ratio?: number
+  kiro_endpoint_mode?: string
   copy_accounts_from_group_ids?: number[]
 }
 
 // ==================== Account & Proxy Types ====================
 
-export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok'
+export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'kiro' | 'grok'
 export type AccountType = 'oauth' | 'setup-token' | 'apikey' | 'upstream' | 'bedrock' | 'service_account'
 export type OAuthAddMethod = 'oauth' | 'setup-token'
 export type ProxyProtocol = 'http' | 'https' | 'socks5' | 'socks5h'
@@ -1046,6 +1068,7 @@ export interface Account {
   extra?: (CodexUsageSnapshot & OpenAICompactState & {
     model_rate_limits?: Record<string, { rate_limited_at: string; rate_limit_reset_at: string }>
     antigravity_credits_overages?: Record<string, { activated_at: string; active_until: string }>
+kiro_credit_unit_price_usd?: number
     upstream_billing_probe_enabled?: boolean
     upstream_billing_probe?: UpstreamBillingProbeSnapshot
   } & Record<string, unknown>)
@@ -1082,6 +1105,12 @@ export interface Account {
   overload_until: string | null
   temp_unschedulable_until: string | null
   temp_unschedulable_reason: string | null
+  kiro_quota_state?: string | null
+  kiro_quota_reason?: string | null
+  kiro_quota_reset_at?: string | null
+  kiro_runtime_state?: string | null
+  kiro_runtime_reason?: string | null
+  kiro_runtime_reset_at?: string | null
 
   // Session window fields (5-hour window)
   session_window_start: string | null
@@ -1169,6 +1198,7 @@ export interface WindowStats {
   cost: number // Account cost (account multiplier)
   standard_cost?: number
   user_cost?: number
+  kiro_credits?: number
 }
 
 export interface UsageProgress {
@@ -1184,6 +1214,21 @@ export interface UsageProgress {
 export interface AntigravityModelQuota {
   utilization: number // 使用率 0-100
   reset_time: string  // 重置时间 ISO8601
+}
+
+export interface KiroCreditProgress {
+  current_usage: number
+  usage_limit: number
+  percentage_used: number
+  days_remaining?: number
+  expiry_date?: string | null
+}
+
+export interface KiroOverageInfo {
+  current_overages: number
+  overage_charges: number
+  currency_code?: string
+  currency_symbol?: string
 }
 
 export interface GrokQuotaWindow {
@@ -1256,6 +1301,19 @@ export interface AccountUsageInfo {
     amount?: number
     minimum_balance?: number
   }> | null
+  kiro_subscription_name?: string | null
+  kiro_subscription_type?: string | null
+  kiro_reset_at?: string | null
+  kiro_overages_enabled?: boolean
+  kiro_credit?: KiroCreditProgress | null
+  kiro_bonus?: KiroCreditProgress | null
+  kiro_overage?: KiroOverageInfo | null
+  kiro_quota_state?: string | null
+  kiro_quota_reason?: string | null
+  kiro_quota_reset_at?: string | null
+  kiro_runtime_state?: string | null
+  kiro_runtime_reason?: string | null
+  kiro_runtime_reset_at?: string | null
   // Antigravity 403 forbidden 状态
   is_forbidden?: boolean
   forbidden_reason?: string

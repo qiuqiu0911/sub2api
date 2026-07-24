@@ -351,6 +351,10 @@ func (s *stubAdminService) PreviewCompositeRoute(ctx context.Context, groupID in
 	return &decision, nil
 }
 
+func (s *stubAdminService) GetGroupEffectiveModels(ctx context.Context, id int64) ([]string, error) {
+	return []string{"claude-sonnet-4-6"}, nil
+}
+
 func (s *stubAdminService) CreateGroup(ctx context.Context, input *service.CreateGroupInput) (*service.Group, error) {
 	group := service.Group{ID: 200, Name: input.Name, Status: service.StatusActive}
 	return &group, nil
@@ -771,6 +775,10 @@ func (s *stubAdminService) ForceOpenAIPrivacy(ctx context.Context, account *serv
 }
 
 func (s *stubAdminService) ForceAntigravityPrivacy(ctx context.Context, account *service.Account) string {
+	return ""
+}
+
+func (s *stubAdminService) EnsureKiroProfileArn(ctx context.Context, account *service.Account) string {
 	return ""
 }
 
